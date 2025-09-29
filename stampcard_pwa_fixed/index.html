@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>スタンプカード</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <style>
+    body { margin:0; font-family: system-ui, sans-serif; background:#f0f9ff; }
+    #root { padding:20px; max-width:600px; margin:auto; }
+    .stamp { width:60px; height:60px; border:2px dashed #0ea5e9;
+             display:inline-flex; align-items:center; justify-content:center;
+             margin:5px; border-radius:12px; font-size:22px; cursor:pointer; }
+    .stamped { background:#0ea5e9; color:#fff; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <h1>スタンプカード</h1>
+    <div id="card"></div>
+    <p id="points"></p>
+    <button onclick="spinGacha()">🎰 ガチャ回す</button>
+    <p id="gachaResult"></p>
+  </div>
+
+  <script>
+    const cardEl = document.getElementById('card');
+    const pointsEl = document.getElementById('points');
+    const resultEl = document.getElementById('gachaResult');
+    let stamps = JSON.parse(localStorage.getItem('stamps') || '[]');
+    let bonus = JSON.parse(localStorage.getItem('bonus') || '0');
+
+    function render() {
+      cardEl.innerHTML = '';
+      for (let i=0;i<30;i++) {
+        const div = document.createElement('div');
+        div.className = 'stamp' + (stamps.includes(i)?' stamped':'');
+        div.textContent = stamps.includes(i)?'✓':'';
+        div.onclick = ()=>{ if (!stamps.includes(i)) { stamps.push(i); save(); } };
+        cardEl.appendChild(div);
+      }
+      pointsEl.textContent = 'ポイント: ' + (stamps.length + bonus);
+    }
+    function save() {
+      localStorage.setItem('stamps', JSON.stringify(stamps));
+      localStorage.setItem('bonus', JSON.stringify(bonus));
+      render();
+    }
+    function spinGacha() {
+      if (localStorage.getItem('gachaToday') === new Date().toDateString()) {
+        resultEl.textContent = '今日はもう回しました！';
+        return;
+      }
+      localStorage.setItem('gachaToday', new Date().toDateString());
+      const r = Math.random();
+      if (r < 0.01) { bonus+=10; resultEl.textContent='🎉 超大当たり!! +10pt'; }
+      else if (r < 0.11) { bonus+=1; resultEl.textContent='✨ あたり! +1pt'; }
+      else { resultEl.textContent='残念…ハズレ'; }
+      save();
+    }
+    render();
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+</body>
+</html>
